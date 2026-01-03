@@ -6,6 +6,25 @@ except ImportError:
                              QTextBrowser, QPushButton, QSplitter, QWidget)
     from PyQt5.QtCore import Qt
 
+try:
+    import markdown
+    HAS_MARKDOWN = True
+except ImportError:
+    HAS_MARKDOWN = False
+
+def render_content(text):
+    if not text:
+        return ""
+    if HAS_MARKDOWN:
+        try:
+            return markdown.markdown(text, extensions=['extra'])
+        except Exception:
+            pass
+
+    import html
+    escaped = html.escape(text)
+    return f"<div style='white-space: pre-wrap; font-family: sans-serif;'>{escaped}</div>"
+
 class ReviewDialog(QDialog):
     def __init__(self, parent, book_title, old_summary, new_summary):
         super().__init__(parent)
@@ -33,7 +52,7 @@ class ReviewDialog(QDialog):
         right_widget.setLayout(r_layout)
         r_layout.addWidget(QLabel("<b>New AI Summary</b>"))
         self.new_view = QTextBrowser()
-        self.new_view.setHtml(new_summary) # Usually markdown, Calibre's browser handles some HTML, maybe need conversion
+        self.new_view.setHtml(render_content(new_summary))
         r_layout.addWidget(self.new_view)
         
         splitter.addWidget(left_widget)
@@ -157,7 +176,7 @@ class BatchReviewDialog(QDialog):
         self.counter_label.setText(f"{self.current_index + 1} / {len(self.book_ids)}")
         
         self.old_view.setHtml(data['old_content'] if data['old_content'] else "<i>No existing summary.</i>")
-        self.new_view.setHtml(data['content'])
+        self.new_view.setHtml(render_content(data['content']))
         
         # Update buttons state
         current_decision = self.decisions[book_id]
