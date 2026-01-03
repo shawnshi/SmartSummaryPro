@@ -1,5 +1,10 @@
-from qt.core import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
+try:
+    from qt.core import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QTextBrowser, QPushButton, QSplitter, QWidget, Qt)
+except ImportError:
+    from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+                             QTextBrowser, QPushButton, QSplitter, QWidget)
+    from PyQt5.QtCore import Qt
 
 class ReviewDialog(QDialog):
     def __init__(self, parent, book_title, old_summary, new_summary):
@@ -184,4 +189,3 @@ class BatchReviewDialog(QDialog):
         book_id = self.book_ids[self.current_index]
         self.decisions[book_id] = decision
         self.update_view()
-
