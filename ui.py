@@ -58,13 +58,46 @@ class SmartSummaryProAction(InterfaceAction):
         template = prefs.get('prompt_template')
         job = GenerationWorker(self.gui, book_ids, template)
         
-        # Run background job
-        self.gui.job_manager.run_threaded_job(job, notification=self.job_finished)
+        # Run background job using threading instead of JobManager
+        # This avoids compatibility issues with different Calibre versions
+        import threading
+        
+        def run_in_background():
+            try:
+                job()  # Execute the callable
+            except Exception as e:
+                job.failed = True
+                job.results['fatal_error'] = str(e)
+        
+        # Start thread
+        thread = threading.Thread(target=run_in_background, daemon=True)
+        thread.start()
+        
+        # Monitor completion using QTimer
+        try:
+            from qt.core import QTimer
+        except ImportError:
+            from PyQt5.QtCore import QTimer
+        
+        def check_completion():
+            if thread.is_alive():
+                # Still running, check again later
+                QTimer.singleShot(500, check_completion)
+            else:
+                # Job finished, process results
+                self.job_finished(job)
+        
+        # Start monitoring
+        QTimer.singleShot(500, check_completion)
+        
+        # Show status message
+        self.gui.status_bar.showMessage(f"Generating summaries for {len(book_ids)} book(s)...", 3000)
 
     def job_finished(self, job):
         # job is the GenerationWorker instance
         if job.failed:
-            self.gui.job_exception(job, dialog_title='Generation Failed')
+            error_msg = job.results.get('fatal_error', 'Unknown error')
+            error_dialog(self.gui, 'Generation Failed', error_msg, show=True)
             return
 
         results = job.results
@@ -99,7 +132,7 @@ class SmartSummaryProAction(InterfaceAction):
             }
         
         if error_count > 0:
-            self.gui.status_bar.show_message(f"Generation complete. Success: {success_count}, Failed: {error_count}", 5000)
+            self.gui.status_bar.showMessage(f"Generation complete. Success: {success_count}, Failed: {error_count}", 5000)
         
         if not review_map:
             if error_count > 0:
@@ -121,5 +154,5 @@ class SmartSummaryProAction(InterfaceAction):
                     db.set_metadata(book_id, mi)
                     applied_count += 1
             
-            self.gui.status_bar.show_message(f"Updated summaries for {applied_count} books.", 3000)
+            self.gui.status_bar.showMessage(f"Updated summaries for {applied_count} books.", 3000)
             self.gui.library_view.model().refresh_ids(list(review_map.keys()))

@@ -1,6 +1,6 @@
 # SmartSummary Pro
 
-**Version: 1.0.6** | [Changelog](#version-history)
+**Version: 1.1.1** | [Changelog](#version-history)
 
 **SmartSummary Pro** is a powerful Calibre plugin that leverages advanced AI models to automatically generate deep, literary summaries for your ebook library.
 
@@ -104,15 +104,3 @@ Ensure you are using a version compatible with your Calibre installation (requir
 *   **Quota exceeded**: Verify you haven't exceeded your daily limit for the configured model.
 *   **Invalid API key**: Double-check your API key is correct and active.
 
-## Version History
-
-### v1.0.6 (2026-01-03)
-*   **Fixed**: Corrected plugin type registration issue that prevented the plugin from appearing in Calibre's toolbar actions list.
-*   **Changed**: Migrated from `Plugin` base class to `InterfaceActionBase` for proper Calibre integration.
-*   **Improved**: Enhanced documentation with clearer installation and troubleshooting steps.
-
-### v1.0.5 (Previous)
-*   Multi-model support with intelligent failover
-*   Batch processing and review dialog
-*   Customizable prompts
-*   Quota management

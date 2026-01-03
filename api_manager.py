@@ -1,6 +1,6 @@
-import requests
 import json
-import time
+import urllib.request
+import urllib.error
 from .quota import QuotaManager
 from .config import prefs
 
@@ -54,7 +54,8 @@ class APIManager:
 
     def call_model_api(self, model_conf, prompt):
         """
-        Generic OpenAI-compatible API call.
+        Generic OpenAI-compatible API call using urllib (built into Python).
+        Compatible with Calibre's embedded Python environment.
         """
         raw_key = model_conf.get('api_key', '')
         
@@ -65,14 +66,10 @@ class APIManager:
         else:
             api_key = raw_key
 
-        endpoint = model_conf.get('endpoint') # e.g. https://api.openai.com/v1/chat/completions
-        model_name = model_conf.get('model_name') # e.g. gpt-4
+        endpoint = model_conf.get('endpoint')  # e.g. https://api.openai.com/v1/chat/completions
+        model_name = model_conf.get('model_name')  # e.g. gpt-4
         
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
-        }
-        
+        # Prepare request payload
         payload = {
             "model": model_name,
             "messages": [
@@ -81,16 +78,41 @@ class APIManager:
             "temperature": 0.7
         }
         
-        # Basic timeout 60s
-        response = requests.post(endpoint, headers=headers, json=payload, timeout=60)
+        # Convert payload to JSON bytes
+        data = json.dumps(payload).encode('utf-8')
         
-        if response.status_code != 200:
-            # Check for specific quota errors if possible to flag specifically?
-            raise Exception(f"API Error {response.status_code}: {response.text}")
-            
-        data = response.json()
+        # Create request with headers
+        request = urllib.request.Request(
+            endpoint,
+            data=data,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            },
+            method='POST'
+        )
+        
         try:
-            content = data['choices'][0]['message']['content']
-            return content
-        except (KeyError, IndexError):
-            raise Exception("Unexpected API response format.")
+            # Send request with 60s timeout
+            with urllib.request.urlopen(request, timeout=60) as response:
+                response_data = response.read().decode('utf-8')
+                result = json.loads(response_data)
+                
+                # Extract content from response
+                try:
+                    content = result['choices'][0]['message']['content']
+                    return content
+                except (KeyError, IndexError):
+                    raise Exception("Unexpected API response format.")
+                    
+        except urllib.error.HTTPError as e:
+            # HTTP error (4xx, 5xx)
+            error_body = e.read().decode('utf-8') if e.fp else str(e)
+            raise Exception(f"API Error {e.code}: {error_body}")
+        except urllib.error.URLError as e:
+            # Network error
+            raise Exception(f"Network Error: {str(e.reason)}")
+        except json.JSONDecodeError as e:
+            # JSON parsing error
+            raise Exception(f"Invalid JSON response: {str(e)}")
+

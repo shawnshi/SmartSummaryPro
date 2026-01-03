@@ -5,7 +5,7 @@ class SmartSummaryProPlugin(InterfaceActionBase):
     description         = 'Generate deep literary summaries using AI models.'
     supported_platforms = ['windows', 'osx', 'linux']
     author              = 'shawn shi'
-    version             = (1, 0, 6)
+    version             = (1, 1, 1)
     minimum_calibre_version = (5, 0, 0)
     
     # InterfaceActionBase automatically sets type = 'User Interface Action'

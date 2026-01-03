@@ -18,7 +18,15 @@ prefs = JSONConfig('plugins/SmartSummaryPro')
 if 'api_configs' not in prefs:
     prefs['api_configs'] = []
 if 'prompt_template' not in prefs:
-    prefs.defaults['prompt_template'] = "..." # (Kept previous default if not set)
+    prefs.defaults['prompt_template'] = """Please generate a comprehensive summary for the following book:
+
+Title: {title}
+Authors: {authors}
+Publisher: {publisher}
+Publication Date: {pubdate}
+Series: {series}
+
+Provide a detailed summary that captures the main themes, plot, and significance of this work."""
 
 def obfuscate_key(key):
     # Simple XOR obfuscation to avoid plain text storage
