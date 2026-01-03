@@ -15,7 +15,7 @@ class SmartSummaryProAction(InterfaceAction):
             return
 
         # Confirm action
-        from PyQt5.QtWidgets import QMessageBox
+        from qt.core import QMessageBox
         book_ids = list(map(self.gui.library_view.model().id, rows))
         count = len(book_ids)
         

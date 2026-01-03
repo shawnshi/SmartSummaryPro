@@ -1,6 +1,5 @@
-from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QTextBrowser, QPushButton, QSplitter, QWidget)
-from PyQt5.QtCore import Qt
+from qt.core import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
+                             QTextBrowser, QPushButton, QSplitter, QWidget, Qt)
 
 class ReviewDialog(QDialog):
     def __init__(self, parent, book_title, old_summary, new_summary):

@@ -1,8 +1,15 @@
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QTextEdit, QTabWidget, 
-                             QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, 
-                             QDialog, QFormLayout, QLineEdit, QComboBox, QMessageBox,
-                             QAbstractItemView, QHeaderView)
-from PyQt5.QtCore import Qt
+try:
+    from qt.core import (QWidget, QVBoxLayout, QLabel, QTextEdit, QTabWidget, 
+                         QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, 
+                         QDialog, QFormLayout, QLineEdit, QComboBox, QMessageBox,
+                         QAbstractItemView, QHeaderView, Qt)
+except ImportError:
+    # Fallback for very old Calibre or external testing
+    from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QTextEdit, QTabWidget, 
+                                 QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, 
+                                 QDialog, QFormLayout, QLineEdit, QComboBox, QMessageBox,
+                                 QAbstractItemView, QHeaderView)
+    from PyQt5.QtCore import Qt
 from calibre.utils.config import JSONConfig
 
 prefs = JSONConfig('plugins/SmartSummaryPro')
