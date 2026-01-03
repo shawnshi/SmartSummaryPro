@@ -6,61 +6,14 @@ class SmartSummaryProAction(InterfaceAction):
     action_spec = ('SmartSummary Pro', 'search',
                    'Generate deep summaries for selected books', None)
     
-    def show_dialog(self):
-        rows = self.gui.library_view.selectionModel().selectedRows()
-        if not rows:
-            error_dialog(self.gui, 'No Selection',
-                         'Please select at least one book to generate a summary.',
-                         show=True)
-            return
-
-        # Confirm action
-        from qt.core import QMessageBox
-        book_ids = list(map(self.gui.library_view.model().id, rows))
-        count = len(book_ids)
-        
-        # Check if API configured
-        from calibre_plugins.smart_summary_pro.config import prefs
-        if not prefs.get('api_configs'):
-            error_dialog(self.gui, 'No API Configured',
-                         'Please go to Preferences -> Plugins -> SmartSummary Pro and configure at least one AI model.',
-                         show=True)
-            return
-
-        if not QMessageBox.question(self.gui, "Generate Summaries", 
-                                    f"Generate deep summaries for {count} books?", 
-                                    QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
-            return
-
-        # Dispatch Job
-        from calibre_plugins.smart_summary_pro.worker import GenerationWorker
-        # Pass the prompt template from prefs
-        template = prefs.get('prompt_template')
-        
-        worker = GenerationWorker(self.gui, book_ids, template)
-        
-        self.gui.job_manager.run_threaded_job(worker)
-        # Connect signals for completion
-        worker.notification.connect(self.job_completed)
-
-    def job_completed(self, notification):
-        # Notification is just a signal, we need the job result.
-        # But ThreadedJob usage in Calibre is tricky. 
-        # Usually we pass a "done" callback to run_threaded_job?
-        # Actually in modern Calibre plugins, job_manager handles it.
-        # Let's adjust: ThreadedJob typically doesn't return value via callback easily unless we use custom signal.
-        # But let's check `worker.results` directly if the job object is passed back?
-        # Calibre's job manager usually keeps the job alive? 
-        # Actually, simpler pattern:
-        # Pass `self.job_done` as argument to `run_threaded_job`?
-        # Checking Calibre source: run_threaded_job(job, notification=cls.job_done)
-        pass 
-        # Wait, I need to restructure show_dialog to pass the callback.
-
     def genesis(self):
         self.qaction.triggered.connect(self.show_dialog)
+        self.menu = self.qaction.menu()
 
-    # Re-implementing show_dialog to pass callback correctly
+    def library_view_context_menu(self, menu, rows):
+        if len(rows) > 0:
+            menu.addAction(self.qaction)
+
     def show_dialog(self):
         rows = self.gui.library_view.selectionModel().selectedRows()
         if not rows: return
@@ -140,6 +93,3 @@ class SmartSummaryProAction(InterfaceAction):
             
             self.gui.status_bar.show_message(f"Updated summaries for {applied_count} books.", 3000)
             self.gui.library_view.model().refresh_ids(list(review_map.keys()))
-
-
-

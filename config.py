@@ -20,6 +20,19 @@ if 'api_configs' not in prefs:
 if 'prompt_template' not in prefs:
     prefs.defaults['prompt_template'] = "..." # (Kept previous default if not set)
 
+def obfuscate_key(key):
+    # Simple XOR obfuscation to avoid plain text storage
+    # Not high security, but prevents casual reading
+    if not key: return ""
+    chars = []
+    secret = 42
+    for c in key:
+        chars.append(chr(ord(c) ^ secret))
+    return "".join(chars)
+
+def deobfuscate_key(key):
+    return obfuscate_key(key) # XOR is symmetric
+
 class ModelEditDialog(QDialog):
     def __init__(self, parent=None, model_data=None):
         super().__init__(parent)
@@ -43,7 +56,6 @@ class ModelEditDialog(QDialog):
             # Simple heuristic: if it starts with 'sk-' and is long, it's plain.
             # If it looks like garbage, might be encrypted.
             # Or better: we assume all keys in storage are encrypted from now on.
-            from .config import deobfuscate_key
             try:
                 dec = deobfuscate_key(enc_key)
                 # Check if it looks valid? If not, maybe it was plain text.
@@ -89,7 +101,6 @@ class ModelEditDialog(QDialog):
 
     def get_data(self):
         import uuid
-        from .config import obfuscate_key
         
         raw_key = self.key_edit.text()
         # Save as "ENC:" + obfuscated
@@ -232,17 +243,3 @@ class ConfigWidget(QWidget):
 
     def save_settings(self):
         prefs['prompt_template'] = self.prompt_edit.toPlainText()
-
-def obfuscate_key(key):
-    # Simple XOR obfuscation to avoid plain text storage
-    # Not high security, but prevents casual reading
-    if not key: return ""
-    chars = []
-    secret = 42
-    for c in key:
-        chars.append(chr(ord(c) ^ secret))
-    return "".join(chars)
-
-def deobfuscate_key(key):
-    return obfuscate_key(key) # XOR is symmetric
-
