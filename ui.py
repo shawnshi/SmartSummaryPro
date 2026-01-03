@@ -8,7 +8,6 @@ class SmartSummaryProAction(InterfaceAction):
     
     def genesis(self):
         self.qaction.triggered.connect(self.show_dialog)
-        self.menu = self.qaction.menu()
 
     def library_view_context_menu(self, menu, rows):
         if len(rows) > 0:

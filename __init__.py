@@ -5,7 +5,7 @@ class SmartSummaryProPlugin(Plugin):
     description         = 'Generate deep literary summaries using AI models.'
     supported_platforms = ['windows', 'osx', 'linux']
     author              = 'shawn shi'
-    version             = (1, 0, 2)
+    version             = (1, 0, 3)
     minimum_calibre_version = (5, 0, 0)
     type                = 'Interface'
 
