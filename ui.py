@@ -3,7 +3,7 @@ from calibre.gui2 import error_dialog
 
 class SmartSummaryProAction(InterfaceAction):
     name = 'SmartSummary Pro'
-    action_spec = ('SmartSummary Pro', None,
+    action_spec = ('SmartSummary Pro', 'images/icon.png',
                    'Generate deep summaries for selected books', None)
     
     def genesis(self):
@@ -12,6 +12,31 @@ class SmartSummaryProAction(InterfaceAction):
 
     def initialization_complete(self):
         print("SmartSummary Pro: initialization_complete called")
+        self.add_to_menu_bar()
+
+    def add_to_menu_bar(self):
+        try:
+            # Attempt to add to the main menu bar to ensure visibility
+            mw = self.gui
+            menubar = mw.menuBar()
+
+            # Check if "SmartSummary" menu already exists to avoid duplication
+            # This is a simple check based on title
+            found_menu = None
+            for action in menubar.actions():
+                if action.text() == "SmartSummary":
+                    found_menu = action.menu()
+                    break
+
+            if found_menu:
+                self.main_menu = found_menu
+            else:
+                self.main_menu = menubar.addMenu("SmartSummary")
+
+            # Add our action to the menu
+            self.main_menu.addAction(self.qaction)
+        except Exception as e:
+            print(f"SmartSummary Pro: Failed to add to menu bar: {e}")
 
     def library_view_context_menu(self, menu, rows):
         if len(rows) > 0:
