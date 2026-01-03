@@ -5,15 +5,12 @@ class SmartSummaryProPlugin(Plugin):
     description         = 'Generate deep literary summaries using AI models.'
     supported_platforms = ['windows', 'osx', 'linux']
     author              = 'shawn shi'
-    version             = (1, 0, 3)
+    version             = (1, 0, 5)
     minimum_calibre_version = (5, 0, 0)
     type                = 'Interface'
 
-    # actual_plugin = '...'  <-- Removed string reference
-    
-    def load_actual_plugin(self, gui):
-        from .ui import SmartSummaryProAction
-        return SmartSummaryProAction(gui, self.site_customization)
+    # The strict requirement for the interface action visibility:
+    actual_plugin       = 'calibre_plugins.smart_summary_pro.ui:SmartSummaryProAction'
 
     def is_customizable(self):
         return True

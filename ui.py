@@ -3,17 +3,23 @@ from calibre.gui2 import error_dialog
 
 class SmartSummaryProAction(InterfaceAction):
     name = 'SmartSummary Pro'
-    action_spec = ('SmartSummary Pro', 'search',
+    action_spec = ('SmartSummary Pro', None,
                    'Generate deep summaries for selected books', None)
     
     def genesis(self):
         self.qaction.triggered.connect(self.show_dialog)
+        print("SmartSummary Pro: genesis called")
+
+    def initialization_complete(self):
+        print("SmartSummary Pro: initialization_complete called")
 
     def library_view_context_menu(self, menu, rows):
         if len(rows) > 0:
             menu.addAction(self.qaction)
 
     def show_dialog(self):
+        base_plugin_object = self.interface_action_base_plugin
+        do_user_config = base_plugin_object.do_user_config
         rows = self.gui.library_view.selectionModel().selectedRows()
         if not rows: return
         book_ids = list(map(self.gui.library_view.model().id, rows))
