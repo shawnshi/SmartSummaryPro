@@ -1,13 +1,15 @@
-from calibre.customize import Plugin
+try:
+    from calibre.customize import InterfacePlugin
+except ImportError:
+    from calibre.customize.interfaces import InterfacePlugin
 
-class SmartSummaryProPlugin(Plugin):
+class SmartSummaryProPlugin(InterfacePlugin):
     name                = 'SmartSummary Pro'
     description         = 'Generate deep literary summaries using AI models.'
     supported_platforms = ['windows', 'osx', 'linux']
     author              = 'Gemini User'
     version             = (1, 0, 0)
     minimum_calibre_version = (5, 0, 0)
-    type                = 'Interface'
 
     # actual_plugin = '...'  <-- Removed string reference
     
