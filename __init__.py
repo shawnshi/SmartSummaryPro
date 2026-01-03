@@ -1,15 +1,14 @@
-from calibre.customize import Plugin
+from calibre.customize import InterfaceActionBase
 
-class SmartSummaryProPlugin(Plugin):
+class SmartSummaryProPlugin(InterfaceActionBase):
     name                = 'SmartSummary Pro'
     description         = 'Generate deep literary summaries using AI models.'
     supported_platforms = ['windows', 'osx', 'linux']
     author              = 'shawn shi'
-    version             = (1, 0, 5)
+    version             = (1, 0, 6)
     minimum_calibre_version = (5, 0, 0)
-    type                = 'Interface'
-
-    # The strict requirement for the interface action visibility:
+    
+    # InterfaceActionBase automatically sets type = 'User Interface Action'
     actual_plugin       = 'calibre_plugins.smart_summary_pro.ui:SmartSummaryProAction'
 
     def is_customizable(self):
