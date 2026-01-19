@@ -69,12 +69,28 @@ class APIManager:
         endpoint = model_conf.get('endpoint')  # e.g. https://api.openai.com/v1/chat/completions
         model_name = model_conf.get('model_name')  # e.g. gpt-4
         
+        # Get max_tokens from prefs
+        max_tokens = prefs.get('max_tokens', 4096)
+        
+        # Check if prompt contains system/user separation (marked by special delimiter)
+        # If prompt is a tuple/list of (system, user), use both; otherwise treat as single user message
+        if isinstance(prompt, (list, tuple)) and len(prompt) == 2:
+            system_prompt, user_prompt = prompt
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        else:
+            # Legacy single prompt format
+            messages = [
+                {"role": "user", "content": prompt}
+            ]
+        
         # Prepare request payload
         payload = {
+            "messages": messages,
             "model": model_name,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ],
+            "max_tokens": max_tokens,
             "temperature": 0.7
         }
         

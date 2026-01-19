@@ -1,9 +1,9 @@
 try:
     from qt.core import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QTextBrowser, QPushButton, QSplitter, QWidget, Qt)
+                             QTextBrowser, QTextEdit, QPushButton, QSplitter, QWidget, Qt)
 except ImportError:
     from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QTextBrowser, QPushButton, QSplitter, QWidget)
+                             QTextBrowser, QTextEdit, QPushButton, QSplitter, QWidget)
     from PyQt5.QtCore import Qt
 
 class ReviewDialog(QDialog):
@@ -24,16 +24,18 @@ class ReviewDialog(QDialog):
         left_widget.setLayout(l_layout)
         l_layout.addWidget(QLabel("<b>Current Summary</b>"))
         self.old_view = QTextBrowser()
+        self.old_view.setMinimumHeight(400)
         self.old_view.setHtml(old_summary if old_summary else "<i>No existing summary.</i>")
         l_layout.addWidget(self.old_view)
         
-        # Right: New
+        # Right: New (Editable)
         right_widget = QWidget()
         r_layout = QVBoxLayout()
         right_widget.setLayout(r_layout)
-        r_layout.addWidget(QLabel("<b>New AI Summary</b>"))
-        self.new_view = QTextBrowser()
-        self.new_view.setHtml(new_summary) # Usually markdown, Calibre's browser handles some HTML, maybe need conversion
+        r_layout.addWidget(QLabel("<b>New AI Summary (Editable)</b>"))
+        self.new_view = QTextEdit()
+        self.new_view.setMinimumHeight(400)
+        self.new_view.setHtml(new_summary)
         r_layout.addWidget(self.new_view)
         
         splitter.addWidget(left_widget)
@@ -101,14 +103,16 @@ class BatchReviewDialog(QDialog):
         left_widget.setLayout(l_layout)
         l_layout.addWidget(QLabel("<b>Current Summary</b>"))
         self.old_view = QTextBrowser()
+        self.old_view.setMinimumHeight(400)
         l_layout.addWidget(self.old_view)
         
-        # Right: New
+        # Right: New (Editable)
         right_widget = QWidget()
         r_layout = QVBoxLayout()
         right_widget.setLayout(r_layout)
-        r_layout.addWidget(QLabel("<b>New AI Summary</b>"))
-        self.new_view = QTextBrowser()
+        r_layout.addWidget(QLabel("<b>New AI Summary (Editable)</b>"))
+        self.new_view = QTextEdit()
+        self.new_view.setMinimumHeight(400)
         r_layout.addWidget(self.new_view)
         
         splitter.addWidget(left_widget)

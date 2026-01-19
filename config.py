@@ -17,16 +17,31 @@ prefs = JSONConfig('plugins/SmartSummaryPro')
 # Ensure defaults
 if 'api_configs' not in prefs:
     prefs['api_configs'] = []
-if 'prompt_template' not in prefs:
-    prefs.defaults['prompt_template'] = """Please generate a comprehensive summary for the following book:
-
+if 'max_tokens' not in prefs:
+    prefs.defaults['max_tokens'] = 4096
+if 'system_prompt' not in prefs:
+    prefs.defaults['system_prompt'] = """You are a senior literary critic, book publisher, and cultural scholar. You specialize in in-depth analysis of books from multiple dimensions: macro historical context, meso literary value, and micro narrative techniques.
+# Task
+Based on the book information I provide, write an insightful, thoughtful, and engaging book introduction. This introduction should not merely be a plot summary or table of contents listing, but should reveal the core logic behind the book, its significance to the era, and its enlightenment to readers."""
+if 'user_prompt' not in prefs:
+    prefs.defaults['user_prompt'] = """# Book Information
 Title: {title}
 Authors: {authors}
 Publisher: {publisher}
 Publication Date: {pubdate}
 Series: {series}
 
-Provide a detailed summary that captures the main themes, plot, and significance of this work."""
+# Writing Framework
+Please structure your writing as follows:
+1. Opening: Era Background & Core Thesis - Briefly describe the historical/academic context in which this book was born and what core questions it attempts to answer.
+2. Core Insights: Deep Thought Analysis - Analyze the book's core viewpoints, philosophical thinking, or narrative framework.
+3. Author's Style & Unique Value - Evaluate the author's writing style and the book's unique/pioneering position among similar works.
+4. Social Impact & Reading Significance - Discuss the value of this book for contemporary readers.
+
+# Tone & Style
+Tone: Professional, elegant, insightful. Avoid hollow marketing terms.
+Word count: 500-800 words.
+Output language: Please write in the same language as the book title."""
 
 def obfuscate_key(key):
     # Simple XOR obfuscation to avoid plain text storage
@@ -190,10 +205,18 @@ class ConfigWidget(QWidget):
         l = QVBoxLayout()
         self.prompt_tab.setLayout(l)
         
-        l.addWidget(QLabel("Customize the instructions sent to the AI:"))
-        self.prompt_edit = QTextEdit()
-        self.prompt_edit.setPlainText(prefs['prompt_template'])
-        l.addWidget(self.prompt_edit)
+        # System Prompt (Role definition)
+        l.addWidget(QLabel("<b>System Prompt</b> (AI role and task definition):"))
+        self.system_prompt_edit = QTextEdit()
+        self.system_prompt_edit.setPlainText(prefs.get('system_prompt', ''))
+        self.system_prompt_edit.setMaximumHeight(150)
+        l.addWidget(self.system_prompt_edit)
+        
+        # User Prompt (Book info template)
+        l.addWidget(QLabel("<b>User Prompt</b> (Template with {title}, {authors}, {publisher}, {pubdate}, {series}):"))
+        self.user_prompt_edit = QTextEdit()
+        self.user_prompt_edit.setPlainText(prefs.get('user_prompt', ''))
+        l.addWidget(self.user_prompt_edit)
         
         self.tabs.addTab(self.prompt_tab, "Prompt Template")
 
@@ -250,4 +273,5 @@ class ConfigWidget(QWidget):
             self.model_table.selectRow(new_row)
 
     def save_settings(self):
-        prefs['prompt_template'] = self.prompt_edit.toPlainText()
+        prefs['system_prompt'] = self.system_prompt_edit.toPlainText()
+        prefs['user_prompt'] = self.user_prompt_edit.toPlainText()

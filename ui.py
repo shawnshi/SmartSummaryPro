@@ -55,8 +55,9 @@ class SmartSummaryProAction(InterfaceAction):
              return
 
         from .worker import GenerationWorker
-        template = prefs.get('prompt_template')
-        job = GenerationWorker(self.gui, book_ids, template)
+        system_prompt = prefs.get('system_prompt')
+        user_prompt = prefs.get('user_prompt')
+        job = GenerationWorker(self.gui, book_ids, system_prompt, user_prompt)
         
         # Run background job using threading instead of JobManager
         # This avoids compatibility issues with different Calibre versions

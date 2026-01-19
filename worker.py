@@ -5,10 +5,11 @@ class GenerationWorker:
     Background worker for generating book summaries.
     Compatible with Calibre 8.x job_manager.run_threaded_job() API.
     """
-    def __init__(self, gui, book_ids, prompt_template):
+    def __init__(self, gui, book_ids, system_prompt, user_prompt):
         self.gui = gui
         self.book_ids = book_ids
-        self.prompt_template = prompt_template
+        self.system_prompt = system_prompt
+        self.user_prompt = user_prompt
         self.api_manager = APIManager()
         
         # Results storage: { book_id: summary_text or error_msg }
@@ -50,9 +51,12 @@ class GenerationWorker:
                     'series': mi.series or "None"
                 }
                 
-                # Safe formatting - only use variables that exist in template
+                # Format both system and user prompts
                 try:
-                    prompt = self.prompt_template.format(**template_vars)
+                    formatted_system = self.system_prompt  # System prompt typically doesn't need formatting
+                    formatted_user = self.user_prompt.format(**template_vars)
+                    # Pass as tuple (system, user) to API manager
+                    prompt = (formatted_system, formatted_user)
                 except KeyError as e:
                     # If template has a key that doesn't exist, provide helpful error
                     raise Exception(f"Template variable {e} not found. Available variables: {', '.join(template_vars.keys())}")
