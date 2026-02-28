@@ -10,10 +10,10 @@ class APIManager:
 
     def get_ordered_models(self):
         """
-        Returns list of API configs sorted by user priority (if we had a priority field).
-        For now, just return the list as is (assuming user ordered them in UI).
+        Returns list of API configs sorted by user priority.
         """
-        return prefs.get('api_configs', [])
+        models = prefs.get('api_configs', [])
+        return sorted(models, key=lambda x: x.get('priority', 999))
 
     def generate_summary(self, prompt):
         """
