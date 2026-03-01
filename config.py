@@ -101,7 +101,7 @@ class ModelEditDialog(QDialog):
         self.layout.addRow("API Key:", self.key_edit)
         self.layout.addRow("Endpoint URL:", self.endpoint_edit)
         self.layout.addRow("Model String (e.g. gpt-4):", self.model_name_edit)
-        self.layout.addRow("Daily Request Limit:", self.limit_edit)
+        self.layout.addRow("Daily Request Limit (0 = unlimited):", self.limit_edit)
         
         self.save_btn = QPushButton("Save")
         self.save_btn.clicked.connect(self.accept)

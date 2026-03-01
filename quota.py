@@ -46,9 +46,7 @@ class QuotaManager:
                 break
         
         if limit <= 0:
-            return True # 0 means unlimited (or handle as disabled? Let's assume 0 is unlimited for now or handle in UI)
-            # Actually, typically 0 might mean no limit, but user said "Quota Exceeded" if limit reached.
-            # Let's assume 0 meant unlimited.
+            return True # A limit of 0 (or less) is treated as unlimited quota.
         
         usage_stats = prefs.get('usage_stats', {})
         current_usage = usage_stats.get(model_id, 0)
