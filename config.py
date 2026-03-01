@@ -222,10 +222,14 @@ class ConfigWidget(QWidget):
 
     def refresh_table(self):
         self.model_table.setRowCount(0)
-        configs = prefs.get('api_configs', [])
+        configs = sorted(prefs.get('api_configs', []), key=lambda x: x.get('priority', 999))
+        # Ensure we assign sequential priorities in case it's the first time
+        for i, conf in enumerate(configs):
+            conf['priority'] = i + 1
+        prefs['api_configs'] = configs
         for i, conf in enumerate(configs):
             self.model_table.insertRow(i)
-            self.model_table.setItem(i, 0, QTableWidgetItem(str(i+1)))
+            self.model_table.setItem(i, 0, QTableWidgetItem(str(conf.get('priority', i+1))))
             self.model_table.setItem(i, 1, QTableWidgetItem(conf.get('name', '')))
             self.model_table.setItem(i, 2, QTableWidgetItem(conf.get('provider', '')))
             self.model_table.setItem(i, 3, QTableWidgetItem(str(conf.get('daily_limit', 0))))
@@ -235,6 +239,7 @@ class ConfigWidget(QWidget):
         if dlg.exec_() == QDialog.Accepted:
             new_data = dlg.get_data()
             configs = prefs.get('api_configs', [])
+            new_data['priority'] = len(configs) + 1
             configs.append(new_data)
             prefs['api_configs'] = configs
             self.refresh_table()
@@ -258,6 +263,8 @@ class ConfigWidget(QWidget):
         if row < 0: return
         configs = prefs.get('api_configs', [])
         del configs[row]
+        for i, conf in enumerate(configs):
+            conf['priority'] = i + 1
         prefs['api_configs'] = configs
         self.refresh_table()
 
@@ -268,6 +275,8 @@ class ConfigWidget(QWidget):
         configs = prefs.get('api_configs', [])
         if 0 <= new_row < len(configs):
             configs[row], configs[new_row] = configs[new_row], configs[row]
+            for i, conf in enumerate(configs):
+                conf['priority'] = i + 1
             prefs['api_configs'] = configs
             self.refresh_table()
             self.model_table.selectRow(new_row)
