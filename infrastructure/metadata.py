@@ -1,3 +1,11 @@
+"""
+@Input:  Calibre Database Object, Book IDs
+@Output: Formatted Book Metadata Context
+@Pos:    infrastructure / metadata.py. DB Adapter.
+
+!!! Maintenance Protocol: If logic, dependencies, or output change, 
+!!! update this header AND the parent directory's _DIR_META.md.
+"""
 from datetime import datetime
 
 class MetadataProcessor:

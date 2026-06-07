@@ -1,3 +1,11 @@
+"""
+@Input:  Generated Summaries, Existing Metadata
+@Output: User Approval/Rejection State
+@Pos:    interfaces / dialogs.py. Gateway View Layer.
+
+!!! Maintenance Protocol: If logic, dependencies, or output change, 
+!!! update this header AND the parent directory's _DIR_META.md.
+"""
 try:
     from qt.core import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QTextBrowser, QTextEdit, QPushButton, QSplitter, QWidget, Qt)

@@ -1,0 +1,117 @@
+"""
+@Input:  System Prompt, User Prompt, Configured Models
+@Output: Generated Summary (String)
+@Pos:    infrastructure / api_manager.py. Adapter for external LLMs.
+
+!!! Maintenance Protocol: If logic, dependencies, or output change, 
+!!! update this header AND the parent directory's _DIR_META.md.
+"""
+import json
+import urllib.request
+import urllib.error
+import time
+import random
+from calibre_plugins.smart_summary_pro.core.quota import QuotaManager
+from calibre_plugins.smart_summary_pro.core.config import prefs
+
+class APIManager:
+    def __init__(self):
+        self.quota_mgr = QuotaManager()
+
+    def get_ordered_models(self):
+        return prefs.get('api_configs', [])
+
+    def generate_summary(self, prompt):
+        models = self.get_ordered_models()
+        if not models:
+            raise Exception("No API models configured. Please check Settings.")
+
+        errors = []
+        for model in models:
+            model_id = model.get('id')
+            name = model.get('name')
+            
+            if not self.quota_mgr.check_quota(model_id):
+                print(f"Skipping {name}: Quota exceeded.")
+                continue
+
+            try:
+                print(f"Attempting generation with {name}...")
+                result = self.call_model_api(model, prompt)
+                self.quota_mgr.increment_usage(model_id)
+                return result
+                
+            except Exception as e:
+                error_msg = f"{name} failed: {str(e)}"
+                print(error_msg)
+                errors.append(error_msg)
+        
+        raise Exception("All configured models failed.\n" + "\n".join(errors))
+
+    def call_model_api(self, model_conf, prompt):
+        raw_key = model_conf.get('api_key', '')
+        
+        from calibre_plugins.smart_summary_pro.core.config import deobfuscate_key
+        if raw_key.startswith("ENC:"):
+            api_key = deobfuscate_key(raw_key[4:])
+        else:
+            api_key = raw_key
+
+        endpoint = model_conf.get('endpoint')
+        model_name = model_conf.get('model_name')
+        max_tokens = prefs.get('max_tokens', 4096)
+        
+        if isinstance(prompt, (list, tuple)) and len(prompt) == 2:
+            system_prompt, user_prompt = prompt
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        else:
+            messages = [{"role": "user", "content": prompt}]
+        
+        payload = {
+            "messages": messages,
+            "model": model_name,
+            "max_tokens": max_tokens,
+            "temperature": 0.7
+        }
+        
+        data = json.dumps(payload).encode('utf-8')
+        request = urllib.request.Request(
+            endpoint,
+            data=data,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            },
+            method='POST'
+        )
+        
+        max_retries = 2
+        for attempt in range(max_retries + 1):
+            try:
+                with urllib.request.urlopen(request, timeout=60) as response:
+                    response_data = response.read().decode('utf-8')
+                    result = json.loads(response_data)
+                    try:
+                        content = result['choices'][0]['message']['content']
+                        return content
+                    except (KeyError, IndexError):
+                        raise Exception("Unexpected API response format.")
+                        
+            except urllib.error.HTTPError as e:
+                if e.code in (429, 502, 503, 504) and attempt < max_retries:
+                    sleep_time = (2 ** attempt) + random.uniform(0, 1)
+                    print(f"API Rate limited/Overloaded ({e.code}). Retrying in {sleep_time:.2f}s...")
+                    time.sleep(sleep_time)
+                    continue
+                error_body = e.read().decode('utf-8') if e.fp else str(e)
+                raise Exception(f"API Error {e.code}: {error_body}")
+            except urllib.error.URLError as e:
+                if attempt < max_retries:
+                    time.sleep(2)
+                    continue
+                raise Exception(f"Network Error: {str(e.reason)}")
+            except json.JSONDecodeError as e:
+                raise Exception(f"Invalid JSON response: {str(e)}")

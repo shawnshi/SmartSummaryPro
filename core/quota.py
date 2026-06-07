@@ -1,5 +1,13 @@
+"""
+@Input:  API Model ID, Cost
+@Output: Quota Validation Boolean
+@Pos:    core / quota.py. Kernel Limiter.
+
+!!! Maintenance Protocol: If logic, dependencies, or output change, 
+!!! update this header AND the parent directory's _DIR_META.md.
+"""
 import datetime
-from .config import prefs
+from calibre_plugins.smart_summary_pro.core.config import prefs
 
 class QuotaManager:
     def __init__(self):

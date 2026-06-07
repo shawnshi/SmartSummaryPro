@@ -1,3 +1,11 @@
+"""
+@Input:  User Clicks, Selected Book IDs
+@Output: Async Jobs Dispatch, Review Dialog Presentation
+@Pos:    interfaces / ui.py. Primary Gateway.
+
+!!! Maintenance Protocol: If logic, dependencies, or output change, 
+!!! update this header AND the parent directory's _DIR_META.md.
+"""
 from calibre.gui2.actions import InterfaceAction
 from calibre.gui2 import error_dialog
 
@@ -16,12 +24,8 @@ class SmartSummaryProAction(InterfaceAction):
 
     def add_to_menu_bar(self):
         try:
-            # Attempt to add to the main menu bar to ensure visibility
             mw = self.gui
             menubar = mw.menuBar()
-
-            # Check if "SmartSummary" menu already exists to avoid duplication
-            # This is a simple check based on title
             found_menu = None
             for action in menubar.actions():
                 if action.text() == "SmartSummary":
@@ -33,7 +37,6 @@ class SmartSummaryProAction(InterfaceAction):
             else:
                 self.main_menu = menubar.addMenu("SmartSummary")
 
-            # Add our action to the menu
             self.main_menu.addAction(self.qaction)
         except Exception as e:
             print(f"SmartSummary Pro: Failed to add to menu bar: {e}")
@@ -43,38 +46,47 @@ class SmartSummaryProAction(InterfaceAction):
             menu.addAction(self.qaction)
 
     def show_dialog(self):
-        base_plugin_object = self.interface_action_base_plugin
-        do_user_config = base_plugin_object.do_user_config
         rows = self.gui.library_view.selectionModel().selectedRows()
         if not rows: return
         book_ids = list(map(self.gui.library_view.model().id, rows))
         
-        from .config import prefs
+        from calibre_plugins.smart_summary_pro.core.config import prefs
         if not prefs.get('api_configs'):
              error_dialog(self.gui, 'No API Configured', 'Please configure an AI model first.', show=True)
              return
 
-        from .worker import GenerationWorker
+        # Pre-extract metadata on the main thread (Thread Safety Fix)
+        db = self.gui.current_db
+        metadata_map = {}
+        for book_id in book_ids:
+            mi = db.get_metadata(book_id, index_is_id=True)
+            authors = ", ".join(mi.authors) if getattr(mi, 'authors', None) else "Unknown"
+            metadata_map[book_id] = {
+                'title': getattr(mi, 'title', "Unknown"),
+                'authors': authors,
+                'publisher': getattr(mi, 'publisher', "Unknown") or "Unknown",
+                'pubdate': str(getattr(mi, 'pubdate', "Unknown")) if getattr(mi, 'pubdate', None) else "Unknown",
+                'series': getattr(mi, 'series', "None") or "None"
+            }
+
+        from calibre_plugins.smart_summary_pro.modules.worker import GenerationWorker
         system_prompt = prefs.get('system_prompt')
         user_prompt = prefs.get('user_prompt')
-        job = GenerationWorker(self.gui, book_ids, system_prompt, user_prompt)
         
-        # Run background job using threading instead of JobManager
-        # This avoids compatibility issues with different Calibre versions
+        # Instantiate pure worker without GUI object
+        job = GenerationWorker(book_ids, metadata_map, system_prompt, user_prompt)
+        
         import threading
-        
         def run_in_background():
             try:
-                job()  # Execute the callable
+                job()
             except Exception as e:
                 job.failed = True
                 job.results['fatal_error'] = str(e)
         
-        # Start thread
         thread = threading.Thread(target=run_in_background, daemon=True)
         thread.start()
         
-        # Monitor completion using QTimer
         try:
             from qt.core import QTimer
         except ImportError:
@@ -82,20 +94,17 @@ class SmartSummaryProAction(InterfaceAction):
         
         def check_completion():
             if thread.is_alive():
-                # Still running, check again later
+                # Report progress dynamically
+                self.gui.status_bar.showMessage(f"Generating summaries: {job.completed_count} / {job.total_count} completed...", 1000)
                 QTimer.singleShot(500, check_completion)
             else:
-                # Job finished, process results
+                self.gui.status_bar.clearMessage()
                 self.job_finished(job)
         
-        # Start monitoring
         QTimer.singleShot(500, check_completion)
-        
-        # Show status message
-        self.gui.status_bar.showMessage(f"Generating summaries for {len(book_ids)} book(s)...", 3000)
+        self.gui.status_bar.showMessage(f"Starting generation for {len(book_ids)} book(s)...", 1000)
 
     def job_finished(self, job):
-        # job is the GenerationWorker instance
         if job.failed:
             error_msg = job.results.get('fatal_error', 'Unknown error')
             error_dialog(self.gui, 'Generation Failed', error_msg, show=True)
@@ -106,10 +115,7 @@ class SmartSummaryProAction(InterfaceAction):
              error_dialog(self.gui, 'Generation Error', results['fatal_error'], show=True)
              return
 
-        # Process results
-        from .dialogs import BatchReviewDialog
-        
-        # Build map for dialog { book_id: {'title':..., 'content':..., 'old_content':...} }
+        from calibre_plugins.smart_summary_pro.interfaces.dialogs import BatchReviewDialog
         review_map = {}
         db = self.gui.current_db
         
@@ -120,7 +126,7 @@ class SmartSummaryProAction(InterfaceAction):
             if not isinstance(book_id, int): continue
             
             if not res['success']:
-                print(f"Failed for {book_id}: {res['error']}")
+                print(f"Failed for {book_id}: {res.get('error', '')}")
                 error_count += 1
                 continue
             
@@ -140,20 +146,27 @@ class SmartSummaryProAction(InterfaceAction):
                 error_dialog(self.gui, 'Generation Failed', 'All attempts failed. Check logs.', show=True)
             return
 
-        # Show Batch Dialog
         dlg = BatchReviewDialog(self.gui, review_map)
         if dlg.exec_():
-            # Apply decisions
             applied_count = 0
             decisions = dlg.decisions
+            val_map = {}
             
             for book_id, decision in decisions.items():
                 if decision == 'apply':
-                    new_summary = review_map[book_id]['content']
-                    mi = db.get_metadata(book_id, index_is_id=True)
-                    mi.comments = new_summary
-                    db.set_metadata(book_id, mi)
+                    val_map[book_id] = review_map[book_id]['content']
                     applied_count += 1
+            
+            if val_map:
+                try:
+                    # Bulk DB update to avoid I/O storm
+                    db.new_api.set_field('comments', val_map)
+                except AttributeError:
+                    # Fallback for very old calibre
+                    for bid, new_summary in val_map.items():
+                        mi = db.get_metadata(bid, index_is_id=True)
+                        mi.comments = new_summary
+                        db.set_metadata(bid, mi)
             
             self.gui.status_bar.showMessage(f"Updated summaries for {applied_count} books.", 3000)
             self.gui.library_view.model().refresh_ids(list(review_map.keys()))

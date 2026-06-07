@@ -1,3 +1,11 @@
+"""
+@Input:  User Preferences (GUI / File)
+@Output: Persistent JSON Config State
+@Pos:    core / config.py. The Kernel.
+
+!!! Maintenance Protocol: If logic, dependencies, or output change, 
+!!! update this header AND the parent directory's _DIR_META.md.
+"""
 try:
     from qt.core import (QWidget, QVBoxLayout, QLabel, QTextEdit, QTabWidget, 
                          QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, 

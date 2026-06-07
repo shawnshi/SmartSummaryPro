@@ -1,3 +1,11 @@
+"""
+@Input:  Calibre Plugin Loader
+@Output: Plugin Initialization (SmartSummaryProPlugin)
+@Pos:    Root Entry Point.
+
+!!! Maintenance Protocol: If logic, dependencies, or output change, 
+!!! update this header AND the parent directory's _DIR_META.md.
+"""
 from calibre.customize import InterfaceActionBase
 
 class SmartSummaryProPlugin(InterfaceActionBase):
@@ -9,13 +17,13 @@ class SmartSummaryProPlugin(InterfaceActionBase):
     minimum_calibre_version = (5, 0, 0)
     
     # InterfaceActionBase automatically sets type = 'User Interface Action'
-    actual_plugin       = 'calibre_plugins.smart_summary_pro.ui:SmartSummaryProAction'
+    actual_plugin       = 'calibre_plugins.smart_summary_pro.interfaces.ui:SmartSummaryProAction'
 
     def is_customizable(self):
         return True
 
     def config_widget(self):
-        from .config import ConfigWidget
+        from .core.config import ConfigWidget
         return ConfigWidget()
 
     def save_settings(self, config_widget):
